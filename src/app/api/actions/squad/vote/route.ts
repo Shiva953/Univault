@@ -11,11 +11,9 @@ import {
     ActionPostResponse,
     createPostResponse,
   } from "@solana/actions";
-  import { clusterApiUrl, Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, TransactionMessage, LAMPORTS_PER_SOL, ComputeBudgetProgram } from "@solana/web3.js";
+  import { clusterApiUrl, Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } from "@solana/web3.js";
     //@ts-ignore
     import * as multisig from "../../../../../../node_modules/@sqds/multisig/lib/index";
-    import * as anchor from "@coral-xyz/anchor";
-    import { redirect } from "next/navigation";
     import { NextActionLink } from "@solana/actions-spec";
 
 export const GET = async (req: Request) => {
@@ -54,7 +52,6 @@ export const POST = async (req: Request) => {
           multisigPda
         );
 
-        //LAST TRANSACTION INDEX(FOR THE LATEST TRANSACTION)
         
         const transactionIndexBN = multisigInfo.transactionIndex;
         let index = Number(transactionIndexBN);
@@ -168,13 +165,10 @@ export const POST = async (req: Request) => {
                   ? "Rejected"
                   : action == "approveandexecute"
                   ? "Approved and Executed"
-                  : "Vault Transaction Finally Executed!"
+                  : `Vault Transaction ${index} Finally Executed!`
               } transaction #${BigInt(index)}`,
                links: {
-                next: {
-                  type: "post",
-                  href: `/api/actions/squad?address=${multisigPda.toString()}`
-                }
+                next: getCompletedAction(action, index, requestUrl)
                }
             },
             // note: no additional signers are needed
@@ -218,4 +212,61 @@ export const OPTIONS = async (req: Request) => {
           txnIndex = Number(requestUrl.searchParams.get("txnIndex")!);
         }
       return { m, txnIndex, action }
+  }
+
+  function getCompletedAction(action: string, index: number, requestUrl: URL): NextActionLink{
+    let description = '', label = 'Successful';
+    if(action == "approve"){
+      description = `Successfully Voted for Transaction #${index}`
+      label = "Voting Successful"
+    }
+    if(action == "execute"){
+      description = `Successfully executed Vault Transaction #${index}`
+      label = "Executed"
+    }
+    if(action == 'reject'){
+      description = `Rejected Transaction #${index}`
+      label = "Rejected"
+    }
+    if(action == 'approveandexecute'){
+      description = `Successfully Approved and Executed Vault Transaction #${index}`
+      label = "Approved and Executed"
+    }
+    return {
+      type: "inline",
+      action: {
+        description: description,
+        icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
+        label: label,
+        title: `Action Complete!`,
+        type: "completed",
+      },
+    };
+  }
+
+  function getNextAction(index: number, multisigPda: string): NextActionLink{
+    return {
+      type: "inline",
+      action: {
+        description: ``,
+        icon: ``,
+        label: `Action Label`,
+        title: `Action completed`,
+        type: "action",
+        links: {
+          actions: [
+            {
+              label: `Return to multisig`,
+              href: `/api/actions/squad?address=${multisigPda}`,
+              // parameters: [
+              //   {
+              //     name: "amount", // field name
+              //     label: "Enter a custom SOL amount", // text input placeholder
+              //   },
+              // ],
+            },
+          ],
+        },
+      },
+    };
   }

@@ -13,8 +13,6 @@ import {
 import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, TransactionMessage, LAMPORTS_PER_SOL, ComputeBudgetProgram, StakeInstruction, StakeProgram, Lockup, Keypair } from "@solana/web3.js";
   //@ts-ignore
   import * as multisig from "../../../../../../node_modules/@sqds/multisig/lib/index";
-  import * as anchor from "@coral-xyz/anchor";
-  import { redirect } from "next/navigation";
   import { NextActionLink } from "@solana/actions-spec";
 
   // N blinks(linked through action chaining)
@@ -80,12 +78,23 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     );
     const txnIndex = multisigInfo.transactionIndex;
     console.log("txn index: ", txnIndex);
+
+      let finalTxnIndex;
+      if(txnIndexForChecking && txnIndexForChecking!=0){
+        finalTxnIndex = txnIndexForChecking;
+      }
+      else{
+        finalTxnIndex = Number(multisigInfo.transactionIndex) + 1;
+      }
+
+      const [transactionPda] = multisig.getTransactionPda({
+        multisigPda,
+        index: BigInt(finalTxnIndex),
+      });
+
        
-      //INITIAL SEND TRANSACTON
     if(action == "send"){
-          console.log("SEND")
           const transferInstruction = SystemProgram.transfer({
-            // The transfer is being signed from the Squads Vault, that is why we use the VaultPda
             fromPubkey: vault_account,
             toPubkey: new PublicKey(w),
             lamports: amount * LAMPORTS_PER_SOL
@@ -109,48 +118,77 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
       }
 
       const stakeKeypair = Keypair.generate();
-      //INTIAL STAKE TRANSACTION
-    if(action == "stake"){
-      // stake instruction = CREATE KEYPAIR + CREATE STAKE ACCOUNT + DELEGATE TO IT
-       // This is NOT the stake account, but required for its creation
+      console.log(stakeKeypair.publicKey)
+      if(action == "stake"){
+        // stake instruction = CREATE KEYPAIR + CREATE STAKE ACCOUNT + DELEGATE TO IT
+        // This is NOT the stake account, but required for its creation
 
-      const minimumRent = await connection.getMinimumBalanceForRentExemption(
-        StakeProgram.space
-      );
-      const amountUserWantsToStake = amount * LAMPORTS_PER_SOL; // This is can be user input. For now, we'll hardcode to 0.5 SOL
-      const amountToStake = minimumRent + amountUserWantsToStake //this is the ACTUAL AMOUNT TO STAKE
+        const minStake = await connection.getStakeMinimumDelegation();
+        // if (amount < minStake.value) {
+        //   console.log("minimum stake:", minStake);
+        //   return new Response(`Stake Amount should be more than ${minStake.value}`, {
+        //     status: 400,
+        //     headers: ACTIONS_CORS_HEADERS,
+        // });
+        // }
 
-      const size = 32
-      const minLamports = await connection.getMinimumBalanceForRentExemption(size, "confirmed");
-      const fundAccountIx = SystemProgram.transfer({
-        fromPubkey: payerAccount,
-        toPubkey: stakeKeypair.publicKey,
-        lamports: minimumRent
-      })
 
-      transaction.add(fundAccountIx)
+        const minimumRent = await connection.getMinimumBalanceForRentExemption(
+          StakeProgram.space
+        );
+        console.log("MINIMUM RENT: ", minimumRent)
+        const amountUserWantsToStake = amount * LAMPORTS_PER_SOL; 
+        const amountToStake = minimumRent + amountUserWantsToStake //this is the ACTUAL AMOUNT TO STAKE
 
-      console.log("STAKE AMOUNT: ", amount)
-      const createStakeAccountIxns = StakeProgram.createAccount({
-        authorized: new Authorized(vault_account, vault_account), // Here we set two authorities: Stake Authority and Withdrawal Authority. Both are set to our wallet.
-        fromPubkey: vault_account,
-        lamports: amountToStake, //AMOUNT OF SOL TO STAKE
-        lockup: new Lockup(0, 0, vault_account), // Optional. We'll set this to 0 for demonstration purposes.
-        stakePubkey: stakeKeypair.publicKey,
-      }).instructions;
+        const fundingTxIx = SystemProgram.transfer({
+          fromPubkey: payerAccount,
+          toPubkey: stakeKeypair.publicKey,
+          lamports: minimumRent
+        })
+        transaction.add(fundingTxIx)
 
-      transaction.partialSign(stakeKeypair);
+        console.log("LAMPORTS TO BE STAKED BY USER: ", amountToStake)
 
-        let stakeInstructions:TransactionInstruction[] = StakeProgram.delegate({
-          stakePubkey: stakeKeypair.publicKey,
-          authorizedPubkey: vault_account,
-          votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w") //VALIDATOR PUBKEY
-        }).instructions;
+      // const createStakeAccountIxns = StakeProgram.createAccount({
+      //   authorized: new Authorized(vault_account, vault_account), // Here we set two authorities: Stake Authority and Withdrawal Authority. Both are set to our wallet.
+      //   fromPubkey: vault_account,
+      //   lamports: amountToStake, //AMOUNT OF SOL TO STAKE
+      //   // lockup: new Lockup(0, 0, SystemProgram.programId), // Optional. We'll set this to 0 for demonstration purposes.
+      //   stakePubkey: stakeKeypair.publicKey,
+      // }).instructions;
+
+      //   let stakeInstructions:TransactionInstruction[] = StakeProgram.delegate({
+      //     stakePubkey: stakeKeypair.publicKey,
+      //     authorizedPubkey: vault_account,
+      //     votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w") //SQUADS VALIDATOR PUBKEY
+      //   }).instructions;
+
+          const txn = new Transaction().add(
+            StakeProgram.createAccount({
+              stakePubkey: stakeKeypair.publicKey,
+              authorized: new Authorized(vault_account, vault_account),
+              fromPubkey: vault_account,
+              lamports: amountToStake,
+              // note: if you want to time lock the stake account for any time period, this is how
+              // lockup: new Lockup(0, 0, account),
+            }),
+            StakeProgram.delegate({
+              stakePubkey: stakeKeypair.publicKey,
+              authorizedPubkey: vault_account,
+              votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w"),
+            }),
+          );
+          txn.recentBlockhash = (
+            await connection.getLatestBlockhash()
+          ).blockhash;
+          txn.feePayer = payerAccount;
+          txn.partialSign(stakeKeypair)
+          const finalStakeIxns = txn.instructions;
 
         const testStakeMessage = new TransactionMessage({
           payerKey: vault_account,
           recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-          instructions: [...createStakeAccountIxns, ...stakeInstructions],
+          instructions: [...finalStakeIxns],
         });
 
           const IX2 = multisig.instructions.vaultTransactionCreate({
@@ -161,7 +199,8 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
             ephemeralSigners: 0,
             transactionMessage: testStakeMessage,
           });
-        transaction.add(IX2);
+
+        transaction.add(...finalStakeIxns);
       }
 
       if(action=="goToTxnIndex"){
@@ -173,15 +212,8 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
         }
         ))
       }
-
-      let finalTxnIndex;
-      if(txnIndexForChecking && txnIndexForChecking!=0){
-        finalTxnIndex = txnIndexForChecking;
-      }
-      else{
-        finalTxnIndex = Number(multisigInfo.transactionIndex) + 1;
-      }
       
+
       transaction.feePayer = payerAccount;
       transaction.recentBlockhash = (
         await connection.getLatestBlockhash()
@@ -196,9 +228,9 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
               next: {
                 type: "inline",
                 action: {
-                  title: `VOTE ON TXN #${finalTxnIndex}`,
+                  title: `Vote on Transaction #${finalTxnIndex}`,
                   icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
-                  description: `Vote on Latest Transaction`,
+                  description: ``,
                   label: "Squads",
                   type: "action",
                   links: {
@@ -225,6 +257,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
               }
             }
           },
+          // signers: (action == "stake") ? [stakeKeypair] : undefined
         });
       
         return Response.json(payload, {
