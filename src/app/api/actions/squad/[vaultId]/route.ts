@@ -315,7 +315,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     return { action, amount, txnIndexForChecking, w };
   }
 
-  export const getCompletedAction = (stage: string): NextActionLink => {
+  const getCompletedAction = (stage: string): NextActionLink => {
     return {
       type: "inline",
       action: {
@@ -328,7 +328,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     };
   };
   
-  export const getNextAction = (stage: string): NextActionLink => {
+  const getNextAction = (stage: string): NextActionLink => {
     return {
       type: "inline",
       action: {
