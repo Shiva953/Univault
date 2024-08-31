@@ -21,7 +21,8 @@ const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  const address = searchParams.get('address');
+  const isAddressPresent = searchParams.has('address');
+  const address = isAddressPresent ? searchParams.get('address') : 'Dpa2R4pdAtmns4JBpYnMQxJ2oD7ttGmFuB2D1AfYm8TJ';
 
   const connection = new Connection(
     clusterApiUrl("mainnet-beta"),
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
           fontFamily: GeistSans.style.fontFamily,
         }}
       >
-        <h2 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '800', marginBlockEnd: "4" }}>${USDBalance}</h2>
+        <h2 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '900', marginBlockEnd: "4" }}>${USDBalance}</h2>
         <h1 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '800' }}>MEMBERS</h1>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '800px' }}>
           {members.map((member, index) => (

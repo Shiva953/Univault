@@ -23,9 +23,9 @@ import {
         const requestUrl = new URL(req.url);
 
         const payload: ActionGetResponse = {
-            title: `View Your Vault!`,
+            title: `UniVault`,
             icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
-            description: `Multisig PDA Address`,
+            description: `View your vault, perform squads actions and vote on transactions!`,
             label: "Squads",
             links: {
               actions: [
@@ -126,7 +126,7 @@ export const POST = async (req: Request) => {
               action: {
                 title: `${name}`,
                 icon: imageUrl,
-                description: `Vault ${vault_account.toString()}`,
+                description: `${vault_account.toString()}`,
                 label: "Squads",
                 type: "action",
                 links: {

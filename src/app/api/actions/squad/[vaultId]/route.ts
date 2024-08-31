@@ -218,6 +218,11 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
       transaction.recentBlockhash = (
         await connection.getLatestBlockhash()
       ).blockhash;
+
+      const imageUrl = new URL(
+        `/api/txnimage?address=${multisigPda.toString()}&txnIndex=${finalTxnIndex}`,
+        requestUrl.origin,
+      ).toString();
       
 
         let payload: ActionPostResponse = await createPostResponse({
@@ -229,7 +234,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
                 type: "inline",
                 action: {
                   title: `Vote on Transaction #${finalTxnIndex}`,
-                  icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
+                  icon: imageUrl,
                   description: ``,
                   label: "Squads",
                   type: "action",
