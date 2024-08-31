@@ -6,7 +6,7 @@ import { GeistSans } from 'geist/font/sans';
 // Assume this function is imported from elsewhere in your project
 import * as multisig from "../../../../node_modules/@sqds/multisig/lib/index";
 
-export const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
+const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
     try{
       const res = await fetch(`https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112&vsToken=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`)
       const data = await res.json();
