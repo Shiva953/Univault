@@ -29,7 +29,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
   ) => {
     try {
       const requestUrl = new URL(req.url);
-      const { action, amount, txnIndexForChecking, w, inputToken, outputToken } = validatedQueryParams(requestUrl); //decoding query params
+      const { action, amount, txnIndexForChecking, w } = validatedQueryParams(requestUrl); //decoding query params
       
       const body: ActionPostRequest = await req.json();
       let payerAccount: PublicKey;
@@ -327,11 +327,5 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     if(requestUrl.searchParams.get("w")){
       w = requestUrl.searchParams.get("w") || '792FsxG2Co6rDAwudPCW1bJp8VwkzVThdSGPPZJpswE5';
     }
-    if(requestUrl.searchParams.get("inputToken")){
-      inputToken = requestUrl.searchParams.get("inputToken")!
-    }
-    if(requestUrl.searchParams.get("outputToken")){
-      outputToken = requestUrl.searchParams.get("outputToken")!
-    }
-    return { action, amount, txnIndexForChecking, w, inputToken, outputToken };
+    return { action, amount, txnIndexForChecking, w };
   }
