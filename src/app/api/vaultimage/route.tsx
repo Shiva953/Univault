@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImageResponse } from '@vercel/og';
-import { Connection, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL, StakeProgram, GetProgramAccountsResponse } from '@solana/web3.js';
 import { GeistSans } from 'geist/font/sans';
 
 // Assume this function is imported from elsewhere in your project
 import * as multisig from "../../../../node_modules/@sqds/multisig/lib/index";
+import { TOKEN_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
 
 const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
     try{
@@ -18,13 +19,15 @@ const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
       }
     }
 
+    async function getTokenBalanceWeb3(connection: Connection, tokenAccount: PublicKey) {
+      const info = await connection.getTokenAccountBalance(tokenAccount);
+      if (info.value.uiAmount == null) throw new Error('No balance found');
+      console.log('Balance (using Solana-Web3.js): ', info.value.uiAmount);
+      return info.value.uiAmount;
+  }
+
 export async function GET(request: NextRequest) {
 
-  const fontData = await fetch(
-    new URL('/GeistVF.ttf', import.meta.url),
-  ).then((res) => res.arrayBuffer());
-
-  
   const { searchParams } = new URL(request.url);
 
   const isAddressPresent = searchParams.has('address');
@@ -53,12 +56,40 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Missing address or threshold', { status: 400 });
   }
 
-  let members = [], threshold = 2, USDBalance = '0.00';
+  let members = [], threshold = 2, USDBalance = 0.00, finalTotalBalance=0;
   try{
       members = multisigAccount.members.map((member) => {return member.key.toString()})
       threshold = multisigAccount.threshold;
+      // total balance = sol balance + staked sol balance + token accounts balance
       const balance = (await connection.getBalance(vault_account))/LAMPORTS_PER_SOL;
-      USDBalance = (await getPriceInUSDC(balance) || 0).toFixed(2);
+      USDBalance = (await getPriceInUSDC(balance) || 0);
+
+      let tokenAccounts:GetProgramAccountsResponse=[], stakeAccounts:GetProgramAccountsResponse=[];
+      try{
+        tokenAccounts = (await connection.getTokenAccountsByOwner(vault_account, {
+          programId: TOKEN_PROGRAM_ID,
+        })).value || []
+      }
+      catch(err){
+        console.log(err);
+      }
+      try{
+      stakeAccounts = (await connection.getTokenAccountsByOwner(vault_account, {
+        programId: StakeProgram.programId
+      })).value || []
+    }
+    catch(err){
+      console.error(err);
+    }
+      tokenAccounts.concat(stakeAccounts)
+      let tokenBalances = 0;
+      for (let tokenAccount of tokenAccounts){
+        const token_balance = await getTokenBalanceWeb3(connection, tokenAccount.pubkey) || 0;
+        tokenBalances += (token_balance);
+      }
+
+      finalTotalBalance = USDBalance + tokenBalances;
+      console.log(finalTotalBalance)
   } catch(err){
       return new NextResponse('Unable to get vault data', { status: 400 });
   }
@@ -78,7 +109,7 @@ export async function GET(request: NextRequest) {
           fontFamily: GeistSans.style.fontFamily,
         }}
       >
-        <h2 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '900', marginBlockEnd: "4" }}>${USDBalance}</h2>
+        <h2 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '900', marginBlockEnd: "4" }}>${finalTotalBalance.toFixed(2)}</h2>
         <h1 style={{ fontSize: '64px', marginBottom: '40px', fontWeight: '800' }}>MEMBERS</h1>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '800px' }}>
           {members.map((member, index) => (
@@ -118,13 +149,6 @@ export async function GET(request: NextRequest) {
     {
       width: 900,
       height: 900,
-      fonts: [
-        {
-          name: 'Typewriter',
-          data: fontData,
-          style: 'normal',
-        },
-      ],
     }
 )
 }

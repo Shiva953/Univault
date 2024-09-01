@@ -134,10 +134,10 @@ export const POST = async (req: Request) => {
                     label: "Deposit",
                     href: `/api/actions/squad/deposit?multisigPda=${multisigPda.toString()}`,
                   },
-                  {
-                    label: "Trade",
-                    href: `/api/actions/squad/trade?multisigPda=${multisigPda.toString()}`,
-                  },
+                  // {
+                  //   label: "Trade",
+                  //   href: `/api/actions/squad/trade?multisigPda=${multisigPda.toString()}`,
+                  // },
                   {
                     label: "Vote",
                     parameters: [

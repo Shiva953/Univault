@@ -100,114 +100,114 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
           transaction.add(IX1);
       }
 
-      if(action == "trade"){
-        const tokenData: any = await connection.getParsedAccountInfo(new PublicKey(inputToken));
-        const decimals: number = tokenData.value?.data?.parsed.info.decimals || 2;
+      // if(action == "trade"){
+      //   const tokenData: any = await connection.getParsedAccountInfo(new PublicKey(inputToken));
+      //   const decimals: number = tokenData.value?.data?.parsed.info.decimals || 2;
 
-        const tradeAmount = Math.floor(amount * (10 ** decimals));
-        const quoteResponse = await ( await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=${inputToken}&outputMint=${outputToken}&amount=${tradeAmount}&slippageBps=50`)).json();
+      //   const tradeAmount = Math.floor(amount * (10 ** decimals));
+      //   const quoteResponse = await ( await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=${inputToken}&outputMint=${outputToken}&amount=${tradeAmount}&slippageBps=50`)).json();
 
-        const instructions = await (
-          await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              quoteResponse,
-              userPublicKey: vault_account.toBase58(),
-              wrapUnwrapSOL: false,
-              dynamicComputeUnitLimit: false,
-              prioritizationFeeLamports: 'auto'
-            })
-          })
-        ).json();
+      //   const instructions = await (
+      //     await fetch('https://quote-api.jup.ag/v6/swap-instructions', {
+      //       method: 'POST',
+      //       headers: {
+      //         'Content-Type': 'application/json'
+      //       },
+      //       body: JSON.stringify({
+      //         quoteResponse,
+      //         userPublicKey: vault_account.toBase58(),
+      //         wrapUnwrapSOL: false,
+      //         dynamicComputeUnitLimit: false,
+      //         prioritizationFeeLamports: 'auto'
+      //       })
+      //     })
+      //   ).json();
         
-        if (instructions.error) {
-          throw new Error("Failed to get swap instructions: " + instructions.error);
-        }
+      //   if (instructions.error) {
+      //     throw new Error("Failed to get swap instructions: " + instructions.error);
+      //   }
         
-        const {
-          tokenLedgerInstruction, // If you are using `useTokenLedger = true`.
-          computeBudgetInstructions, // The necessary instructions to setup the compute budget.
-          setupInstructions, // Setup missing ATA for the users.
-          swapInstruction: swapInstructionPayload, // The actual swap instruction.
-          cleanupInstruction, // Unwrap the SOL if `wrapAndUnwrapSol = true`.
-          addressLookupTableAddresses, // The lookup table addresses that you can use if you are using versioned transaction.
-        } = instructions;
+      //   const {
+      //     tokenLedgerInstruction, // If you are using `useTokenLedger = true`.
+      //     computeBudgetInstructions, // The necessary instructions to setup the compute budget.
+      //     setupInstructions, // Setup missing ATA for the users.
+      //     swapInstruction: swapInstructionPayload, // The actual swap instruction.
+      //     cleanupInstruction, // Unwrap the SOL if `wrapAndUnwrapSol = true`.
+      //     addressLookupTableAddresses, // The lookup table addresses that you can use if you are using versioned transaction.
+      //   } = instructions;
         
-        const deserializeInstruction = (instruction: any) => {
-          return new TransactionInstruction({
-            programId: new PublicKey(instruction.programId),
-            keys: instruction.accounts.map((key: any) => ({
-              pubkey: new PublicKey(key.pubkey),
-              isSigner: key.isSigner,
-              isWritable: key.isWritable,
-            })),
-            data: Buffer.from(instruction.data, "base64"),
-          });
-        };
+      //   const deserializeInstruction = (instruction: any) => {
+      //     return new TransactionInstruction({
+      //       programId: new PublicKey(instruction.programId),
+      //       keys: instruction.accounts.map((key: any) => ({
+      //         pubkey: new PublicKey(key.pubkey),
+      //         isSigner: key.isSigner,
+      //         isWritable: key.isWritable,
+      //       })),
+      //       data: Buffer.from(instruction.data, "base64"),
+      //     });
+      //   };
 
-        //ALTs
-        const getAddressLookupTableAccounts = async (
-          keys: string[]
-        ): Promise<AddressLookupTableAccount[]> => {
-          const addressLookupTableAccountInfos =
-            await connection.getMultipleAccountsInfo(
-              keys.map((key) => new PublicKey(key))
-            );
+      //   //ALTs
+      //   const getAddressLookupTableAccounts = async (
+      //     keys: string[]
+      //   ): Promise<AddressLookupTableAccount[]> => {
+      //     const addressLookupTableAccountInfos =
+      //       await connection.getMultipleAccountsInfo(
+      //         keys.map((key) => new PublicKey(key))
+      //       );
         
-          return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
-            const addressLookupTableAddress = keys[index];
-            if (accountInfo) {
-              const addressLookupTableAccount = new AddressLookupTableAccount({
-                key: new PublicKey(addressLookupTableAddress),
-                state: AddressLookupTableAccount.deserialize(accountInfo.data),
-              });
-              acc.push(addressLookupTableAccount);
-            }
+      //     return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
+      //       const addressLookupTableAddress = keys[index];
+      //       if (accountInfo) {
+      //         const addressLookupTableAccount = new AddressLookupTableAccount({
+      //           key: new PublicKey(addressLookupTableAddress),
+      //           state: AddressLookupTableAccount.deserialize(accountInfo.data),
+      //         });
+      //         acc.push(addressLookupTableAccount);
+      //       }
         
-            return acc;
-          }, new Array<AddressLookupTableAccount>());
-        };
+      //       return acc;
+      //     }, new Array<AddressLookupTableAccount>());
+      //   };
         
-        const addressLookupTableAccounts: AddressLookupTableAccount[] = [];
+      //   const addressLookupTableAccounts: AddressLookupTableAccount[] = [];
         
-        addressLookupTableAccounts.push(
-          ...(await getAddressLookupTableAccounts(addressLookupTableAddresses))
-        );
+      //   addressLookupTableAccounts.push(
+      //     ...(await getAddressLookupTableAccounts(addressLookupTableAddresses))
+      //   );
         
-        const blockhash = (await connection.getLatestBlockhash()).blockhash;
-        const messageV0 = new TransactionMessage({
-          payerKey: vault_account,
-          recentBlockhash: blockhash,
-          instructions: [
-            ...computeBudgetInstructions.map(deserializeInstruction),
-            ...setupInstructions.map(deserializeInstruction),
-            deserializeInstruction(swapInstructionPayload),
-            deserializeInstruction(cleanupInstruction),
-          ],
-        }).compileToV0Message(addressLookupTableAccounts);
-        // const swaptxn = new VersionedTransaction(messageV0).serialize();
-        const finalSwapMessage = TransactionMessage.decompile(messageV0, {addressLookupTableAccounts: addressLookupTableAccounts});
+      //   const blockhash = (await connection.getLatestBlockhash()).blockhash;
+      //   const messageV0 = new TransactionMessage({
+      //     payerKey: vault_account,
+      //     recentBlockhash: blockhash,
+      //     instructions: [
+      //       // ...computeBudgetInstructions.map(deserializeInstruction),
+      //       // ...setupInstructions.map(deserializeInstruction),
+      //       deserializeInstruction(swapInstructionPayload),
+      //       // deserializeInstruction(cleanupInstruction),
+      //     ],
+      //   }).compileToV0Message(addressLookupTableAccounts);
+      //   // const swaptxn = new VersionedTransaction(messageV0).serialize();
+      //   const finalSwapMessage = TransactionMessage.decompile(messageV0, {addressLookupTableAccounts: addressLookupTableAccounts});
 
-        // const swapMessage = new TransactionMessage({
-        //   payerKey: vault_account,
-        //   recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-        //   instructions: [...finalSwapInstructions],
-        // });
+      //   // const swapMessage = new TransactionMessage({
+      //   //   payerKey: vault_account,
+      //   //   recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+      //   //   instructions: [deserializeInstruction(swapInstructionPayload)],
+      //   // });
 
-          const swapVaultIxn = multisig.instructions.vaultTransactionCreate({
-            multisigPda,
-            transactionIndex: BigInt(Number(txnIndex) + 1),
-            creator: payerAccount,
-            vaultIndex: 0,
-            ephemeralSigners: 0,
-            transactionMessage: finalSwapMessage,
-          });
+      //     const swapVaultIxn = multisig.instructions.vaultTransactionCreate({
+      //       multisigPda,
+      //       transactionIndex: BigInt(Number(txnIndex) + 1),
+      //       creator: payerAccount,
+      //       vaultIndex: 0,
+      //       ephemeralSigners: 0,
+      //       transactionMessage: finalSwapMessage,
+      //     });
 
-          transaction.add(swapVaultIxn)
-      }
+      //     transaction.add(swapVaultIxn)
+      // }
 
       if(action == "deposit"){
         const ixn = SystemProgram.transfer({
