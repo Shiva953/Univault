@@ -29,7 +29,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
   ) => {
     try {
       const requestUrl = new URL(req.url);
-      const { action, amount, txnIndexForChecking, w } = validatedQueryParams(requestUrl); //decoding query params
+      const { action, amount, txnIndexForChecking, wallet } = validatedQueryParams(requestUrl); //decoding query params
       
       const body: ActionPostRequest = await req.json();
       let payerAccount: PublicKey;
@@ -80,7 +80,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     if(action == "send"){
           const transferInstruction = SystemProgram.transfer({
             fromPubkey: vault_account,
-            toPubkey: new PublicKey(w),
+            toPubkey: new PublicKey(wallet),
             lamports: amount * LAMPORTS_PER_SOL
           }
           );
@@ -304,8 +304,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     let action;
     let amount = 0.001;
     let txnIndexForChecking = 0;
-    let w = '792FsxG2Co6rDAwudPCW1bJp8VwkzVThdSGPPZJpswE5'
-    let inputToken = 'So11111111111111111111111111111111111111112', outputToken='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+    let wallet = '';
     try {
       if (requestUrl.searchParams.get("action")) {
         action = requestUrl.searchParams.get("action")!;
@@ -324,8 +323,8 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     if(requestUrl.searchParams.get("txnIndex")){
       txnIndexForChecking = parseInt(requestUrl.searchParams.get("txnIndex")!)
     }
-    if(requestUrl.searchParams.get("w")){
-      w = requestUrl.searchParams.get("w") || '792FsxG2Co6rDAwudPCW1bJp8VwkzVThdSGPPZJpswE5';
+    if(requestUrl.searchParams.get("wallet")){
+      wallet = requestUrl.searchParams.get("wallet") || '792FsxG2Co6rDAwudPCW1bJp8VwkzVThdSGPPZJpswE5';
     }
-    return { action, amount, txnIndexForChecking, w };
+    return { action, amount, txnIndexForChecking, wallet };
   }

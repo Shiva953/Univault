@@ -75,7 +75,7 @@ import {
                   actions: [
                     {
                       label: "Send",
-                      href: `${baseHref}?action=send&amount={sendAmount}&wallet={w}`,
+                      href: `${baseHref}?action=send&amount={sendAmount}&wallet={wallet}`,
                       parameters: [
                         {
                           name: "sendAmount", 
@@ -83,7 +83,7 @@ import {
                           required: true,
                         },
                         {
-                            name: "w", 
+                            name: "wallet", 
                             label: "Wallet Address of Recipient",
                             required: true,
                           },
