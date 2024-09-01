@@ -4,7 +4,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImageResponse } from '@vercel/og';
 import { Connection, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GeistSans } from 'geist/font/sans';
 import * as anchor from "@coral-xyz/anchor";
 
 // Assume this function is imported from elsewhere in your project
@@ -115,9 +114,7 @@ export async function GET(request: NextRequest) {
       approvingMembers = proposalInfo.approved.map((key) => key.toBase58());
       rejectingMembers = proposalInfo.rejected.map((key) => key.toBase58());
     } catch (error) {
-      return Response.json({ error: "INVALID PROPOSAL" }, {
-        status: 400,
-    });
+      console.error(error)
     }
 
     if (txnStatus !== "Executed" && txnStatus !== "Cancelled") {

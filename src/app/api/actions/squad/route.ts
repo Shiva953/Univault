@@ -135,13 +135,13 @@ export const POST = async (req: Request) => {
                       label: "Send",
                       href: `/api/actions/squad/send?multisigPda=${multisigPda.toString()}`,
                     },
-                    {
-                      label: "Stake",
-                      href: `/api/actions/squad/stake?multisigPda=${multisigPda.toString()}`,
-                  },
                   {
                     label: "Deposit",
                     href: `/api/actions/squad/deposit?multisigPda=${multisigPda.toString()}`,
+                  },
+                  {
+                    label: "Trade",
+                    href: `/api/actions/squad/trade?multisigPda=${multisigPda.toString()}`,
                   },
                   {
                     label: "Vote",
@@ -184,8 +184,6 @@ export const POST = async (req: Request) => {
 
 function validatedQueryParams(requestUrl: URL) {
     let multisigAddress='';
-  // const sq = Squads.mainnet();
-  // const tx = await sq;
     try {
       if (requestUrl.searchParams.get("address")) {
         multisigAddress = requestUrl.searchParams.get("address")!;
