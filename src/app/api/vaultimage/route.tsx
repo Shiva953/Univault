@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Unable to get vault data', { status: 400 });
   }
 
-  return new ImageResponse(
+  const img = new ImageResponse(
     (
       <div
         style={{
@@ -151,4 +151,13 @@ export async function GET(request: NextRequest) {
       height: 900,
     }
 )
+
+  const headers = new Headers(img.headers);
+  headers.set('Cache-Control', 'no-store, max-age=0');
+
+  return new Response(img.body, {
+    headers,
+    status: img.status,
+    statusText: img.statusText,
+  });
 }

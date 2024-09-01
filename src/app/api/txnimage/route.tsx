@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     const members = multisigAccount.members.map((member) => member.key.toString());
     const threshold = multisigAccount.threshold || 2;
 
-    return new ImageResponse(
+    const img = new ImageResponse(
         (
           <div
             style={{
@@ -207,4 +207,13 @@ export async function GET(request: NextRequest) {
           height: 1000,
         },
       );
+
+      const headers = new Headers(img.headers);
+      headers.set('Cache-Control', 'no-store, max-age=0');
+
+      return new Response(img.body, {
+        headers,
+        status: img.status,
+        statusText: img.statusText,
+      });
 }
