@@ -24,7 +24,7 @@ import {
 
         const payload: ActionGetResponse = {
             title: `UniVault`,
-            icon: new URL("/squads_blink_intro.png", requestUrl.origin).toString(),
+            icon: new URL("https://i.postimg.cc/J0WVk0p1/squads-blink-intro.png", requestUrl.origin).toString(),
             description: `View your vault, perform squads actions and vote on transactions!`,
             label: "Squads",
             links: {
