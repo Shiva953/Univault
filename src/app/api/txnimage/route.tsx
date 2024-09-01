@@ -37,12 +37,11 @@ export async function GET(request: NextRequest) {
         index: 0,
       });
 
-      const multisigInfo = await fetch(
-        `https://v4-api.squads.so/multisig/${vault_account.toString()}`,
-      ).then((res) => res.json());
-    
-      const meta = multisigInfo.metadata;
-    
+      const [proposalPda] = multisig.getProposalPda({
+        multisigPda,
+        transactionIndex: BigInt(Number(txnIndex)),
+    });
+
       const [proposal, bump] = PublicKey.findProgramAddressSync(
         [
           Buffer.from("multisig"),
@@ -54,51 +53,92 @@ export async function GET(request: NextRequest) {
         multisig.PROGRAM_ID,
       );
 
-      const proposalInfo = await multisig.accounts.Proposal.fromAccountAddress(
-        connection,
-        proposal,
-      )!;
+    //   const proposalInfo = await multisig.accounts.Proposal.fromAccountAddress(
+    //     connection,
+    //     proposal,
+    //   )!;
     
-      const approvals = proposalInfo.approved.length || 0;
-      const txnStatus = proposalInfo.status.__kind;
+    //   const txnStatus = proposalInfo.status.__kind;
 
-      const [transaction, txBump] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("multisig"),
-          new PublicKey(address!).toBuffer(),
-          Buffer.from("transaction"),
-          new anchor.BN(txnIndex!).toArrayLike(Buffer, "le", 8),
-        ],
-        multisig.PROGRAM_ID,
-      );
+    //   const [transaction, txBump] = PublicKey.findProgramAddressSync(
+    //     [
+    //       Buffer.from("multisig"),
+    //       new PublicKey(address!).toBuffer(),
+    //       Buffer.from("transaction"),
+    //       new anchor.BN(txnIndex!).toArrayLike(Buffer, "le", 8),
+    //     ],
+    //     multisig.PROGRAM_ID,
+    //   );
 
-      const transactionInfo =
-    await multisig.accounts.VaultTransaction.fromAccountAddress(
-      connection,
-      transaction,
-    )!;
+    //   const transactionInfo =
+    // await multisig.accounts.VaultTransaction.fromAccountAddress(
+    //   connection,
+    //   transaction,
+    // )!;
 
-    const message = transactionInfo.message;
-    const creator = transactionInfo.creator.toString(); // creator of txn
+    // let pending = []
 
-    const pending = multisigInfo.account.members.filter(
-        (x: PublicKey) =>
-        !proposalInfo.approved.includes(x) || !proposalInfo.rejected.includes(x),
-    );
+    // if(txnStatus!=="Executed" && txnStatus!=="Cancelled"){
+    //   const multisigInfo = await fetch(
+    //     `https://v4-api.squads.so/multisig/${vault_account.toString()}`,
+    //   ).then((res) => res.json());
+
+    //   pending = multisigInfo.account.members.filter(
+    //       (x: PublicKey) =>
+    //       !proposalInfo.approved.includes(x) || !proposalInfo.rejected.includes(x),
+    //   );
+    // }
     
-    const approvingMembers = proposalInfo.approved.map((key) => key.toBase58()) || ['']
-    const rejectingMembers = proposalInfo.rejected.map((key) => key.toBase58()) || ['']
-    const pendingMembers = pending.map((member: any) => member.key);
-    const members = multisigAccount.members.map((member) => {return member.key.toString()})
+    
+    // const approvingMembers = proposalInfo.approved.map((key) => key.toBase58()) || ['']
+    // const rejectingMembers = proposalInfo.rejected.map((key) => key.toBase58()) || ['']
+    // const pendingMembers = pending.map((member: any) => member.key);
+    // const members = multisigAccount.members.map((member) => {return member.key.toString()})
+    // const threshold = multisigAccount.threshold || 2;
+
+    // console.log({
+    //     approvingMembers,
+    //     rejectingMembers,
+    //     members,
+    //     threshold,
+    //     pendingMembers
+    // })
+    let proposalInfo;
+    let txnStatus = "";
+    let approvingMembers: string[] = [];
+    let rejectingMembers: string[] = [];
+    let pendingMembers: string[] = [];
+
+    try {
+      proposalInfo = await multisig.accounts.Proposal.fromAccountAddress(connection, proposalPda);
+      txnStatus = proposalInfo.status.__kind;
+      approvingMembers = proposalInfo.approved.map((key) => key.toBase58());
+      rejectingMembers = proposalInfo.rejected.map((key) => key.toBase58());
+    } catch (error) {
+      return Response.json({ error: "INVALID PROPOSAL" }, {
+        status: 400,
+    });
+    }
+
+    if (txnStatus !== "Executed" && txnStatus !== "Cancelled") {
+      try {
+        const multisigInfo = await fetch(
+          `https://v4-api.squads.so/multisig/${vault_account.toString()}`,
+        ).then((res) => res.json());
+
+        const allMembers = multisigInfo.account.members.map((member: any) => member.key);
+        pendingMembers = allMembers.filter(
+          (member: string) =>
+            !approvingMembers.includes(member) && !rejectingMembers.includes(member)
+        );
+      } catch (error) {
+        pendingMembers = []
+        console.log(error)
+      }
+    }
+
+    const members = multisigAccount.members.map((member) => member.key.toString());
     const threshold = multisigAccount.threshold || 2;
-
-    console.log({
-        approvingMembers,
-        rejectingMembers,
-        members,
-        threshold,
-        pendingMembers
-    })
 
     return new ImageResponse(
         (
@@ -109,7 +149,7 @@ export async function GET(request: NextRequest) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              fontFamily: '"Geist"',
+              fontFamily: '"Inter"',
               justifyContent: 'center',
               backgroundColor: 'white',
               fontWeight: 'bold',
@@ -149,7 +189,9 @@ export async function GET(request: NextRequest) {
                 color: 'white', 
                 padding: 20, 
                 borderRadius: 10,
-                maxWidth: '80%',
+                maxWidth: '90%',
+                maxHeight: '50%',
+                height:200,
                 wordWrap: 'break-word',
                 textAlign: 'center',
                 display: 'flex',
@@ -157,7 +199,7 @@ export async function GET(request: NextRequest) {
               }}
             >
               {pendingMembers.map((member: any, index: any) => (
-                <div key={index} style={{ display: 'flex' }}>{member}</div>
+                <div key={index} style={{ display: 'flex', fontWeight: 'bold' }}>{member}</div>
               ))}
             </div>
           </div>

@@ -10,7 +10,7 @@ import {
   ActionPostResponse,
   createPostResponse,
 } from "@solana/actions";
-import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, TransactionMessage, LAMPORTS_PER_SOL, ComputeBudgetProgram, StakeInstruction, StakeProgram, Lockup, Keypair } from "@solana/web3.js";
+import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, TransactionMessage, LAMPORTS_PER_SOL, ComputeBudgetProgram, StakeInstruction, StakeProgram, Lockup, Keypair, sendAndConfirmTransaction } from "@solana/web3.js";
   //@ts-ignore
   import * as multisig from "../../../../../../node_modules/@sqds/multisig/lib/index";
   import { NextActionLink } from "@solana/actions-spec";
@@ -43,10 +43,14 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
       const { action, amount, txnIndexForChecking, w } = validatedQueryParams(requestUrl); //decoding query params
       
       const body: ActionPostRequest = await req.json(); //the POST request body
-      const payerAccount = new PublicKey(body.account);
+      let payerAccount: PublicKey;
+        try {
+          payerAccount = new PublicKey(body.account);
+        } catch (err) {
+          throw 'Invalid "account" provided';
+        }
 
       const multisg = params.vaultId;
-      console.log(multisg)
       multisigPda = new PublicKey(multisg);
 
       [vault_account] = multisig.getVaultPda({
@@ -54,9 +58,6 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
         index: 0,
       });
 
-      console.log("VAULT ACCOUNT: ", vault_account)
-
-      //get the base href from the frontend
       const baseHref = new URL(
         `/api/actions/squad/${multisg}`,
         requestUrl.origin
@@ -121,16 +122,14 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
       console.log(stakeKeypair.publicKey)
       if(action == "stake"){
         // stake instruction = CREATE KEYPAIR + CREATE STAKE ACCOUNT + DELEGATE TO IT
-        // This is NOT the stake account, but required for its creation
-
         const minStake = await connection.getStakeMinimumDelegation();
-        // if (amount < minStake.value) {
-        //   console.log("minimum stake:", minStake);
-        //   return new Response(`Stake Amount should be more than ${minStake.value}`, {
-        //     status: 400,
-        //     headers: ACTIONS_CORS_HEADERS,
-        // });
-        // }
+        if (amount < minStake.value) {
+          console.log("minimum stake:", minStake);
+          return new Response(`Stake Amount should be more than ${minStake.value}`, {
+            status: 400,
+            headers: ACTIONS_CORS_HEADERS,
+        });
+        }
 
 
         const minimumRent = await connection.getMinimumBalanceForRentExemption(
@@ -149,46 +148,43 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
 
         console.log("LAMPORTS TO BE STAKED BY USER: ", amountToStake)
 
-      // const createStakeAccountIxns = StakeProgram.createAccount({
-      //   authorized: new Authorized(vault_account, vault_account), // Here we set two authorities: Stake Authority and Withdrawal Authority. Both are set to our wallet.
-      //   fromPubkey: vault_account,
-      //   lamports: amountToStake, //AMOUNT OF SOL TO STAKE
-      //   // lockup: new Lockup(0, 0, SystemProgram.programId), // Optional. We'll set this to 0 for demonstration purposes.
-      //   stakePubkey: stakeKeypair.publicKey,
-      // }).instructions;
+      const createStakeAccountIxns = StakeProgram.createAccount({
+        authorized: new Authorized(vault_account, vault_account), // Here we set two authorities: Stake Authority and Withdrawal Authority. Both are set to our wallet.
+        fromPubkey: vault_account,
+        lamports: amountToStake, //AMOUNT OF SOL TO STAKE
+        // lockup: new Lockup(0, 0, SystemProgram.programId), // Optional. We'll set this to 0 for demonstration purposes.
+        stakePubkey: stakeKeypair.publicKey,
+      }).instructions;
 
-      //   let stakeInstructions:TransactionInstruction[] = StakeProgram.delegate({
-      //     stakePubkey: stakeKeypair.publicKey,
-      //     authorizedPubkey: vault_account,
-      //     votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w") //SQUADS VALIDATOR PUBKEY
-      //   }).instructions;
+      // const s = sendAndConfirmTransaction(connection, createStakeAccountIxns, [payerAccount, stakeKeypair])
+        let stakeDelegateInstructions:TransactionInstruction[] = StakeProgram.delegate({
+          stakePubkey: stakeKeypair.publicKey,
+          authorizedPubkey: vault_account,
+          votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w") //SQUADS VALIDATOR
+        }).instructions;
 
-          const txn = new Transaction().add(
-            StakeProgram.createAccount({
-              stakePubkey: stakeKeypair.publicKey,
-              authorized: new Authorized(vault_account, vault_account),
-              fromPubkey: vault_account,
-              lamports: amountToStake,
-              // note: if you want to time lock the stake account for any time period, this is how
-              // lockup: new Lockup(0, 0, account),
-            }),
-            StakeProgram.delegate({
-              stakePubkey: stakeKeypair.publicKey,
-              authorizedPubkey: vault_account,
-              votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w"),
-            }),
-          );
-          txn.recentBlockhash = (
-            await connection.getLatestBlockhash()
-          ).blockhash;
-          txn.feePayer = payerAccount;
-          txn.partialSign(stakeKeypair)
-          const finalStakeIxns = txn.instructions;
+          // const txn = new Transaction().add(
+          //   StakeProgram.createAccount({
+          //     stakePubkey: stakeKeypair.publicKey,
+          //     authorized: new Authorized(vault_account, vault_account),
+          //     fromPubkey: vault_account,
+          //     lamports: amountToStake,
+          //     // note: if you want to time lock the stake account for any time period, this is how
+          //     // lockup: new Lockup(0, 0, account),
+          //   }),
+          //   StakeProgram.delegate({
+          //     stakePubkey: stakeKeypair.publicKey,
+          //     authorizedPubkey: vault_account,
+          //     votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w"),
+          //   }),
+          // );
+
+          // const finalStakeIxns = txn.instructions;
 
         const testStakeMessage = new TransactionMessage({
           payerKey: vault_account,
           recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-          instructions: [...finalStakeIxns],
+          instructions: [...createStakeAccountIxns, ...stakeDelegateInstructions],
         });
 
           const IX2 = multisig.instructions.vaultTransactionCreate({
@@ -196,11 +192,32 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
             transactionIndex: BigInt(Number(txnIndex) + 1),
             creator: payerAccount,
             vaultIndex: 0,
-            ephemeralSigners: 0,
+            ephemeralSigners: 1,
             transactionMessage: testStakeMessage,
           });
+          // const IX2 = await multisig.rpc.vaultTransactionCreate({
+          //   connection, 
+          //   feePayer: stakeKeypair,
+          //   multisigPda,
+          //   transactionIndex: BigInt(Number(txnIndex) + 1),
+          //   creator: payerAccount,
+          //   vaultIndex: 0,
+          //   ephemeralSigners: 1,
+          //   transactionMessage: testStakeMessage,
+          //   signers: [stakeKeypair]
+          // });
+          // const ins = await connection.getSignaturesForAddress
 
-        transaction.add(...finalStakeIxns);
+        transaction.add(IX2);
+      }
+
+      if(action == "deposit"){
+        const ixn = SystemProgram.transfer({
+          fromPubkey: payerAccount,
+          toPubkey: vault_account,
+          lamports: amount * LAMPORTS_PER_SOL
+        })
+        transaction.add(ixn)
       }
 
       if(action=="goToTxnIndex"){
@@ -212,7 +229,6 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
         }
         ))
       }
-      
 
       transaction.feePayer = payerAccount;
       transaction.recentBlockhash = (
@@ -224,12 +240,11 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
         requestUrl.origin,
       ).toString();
       
-
         let payload: ActionPostResponse = await createPostResponse({
           fields: {
             transaction,
-            message: `SUCCESSFUL FIRST ${action} TRANSACTION`,
-            links: {
+            message: `Transaction Successful`,
+            links: (action!=="deposit" ? ({
               next: {
                 type: "inline",
                 action: {
@@ -260,7 +275,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
                   },
                 }
               }
-            }
+            }) : undefined)
           },
           // signers: (action == "stake") ? [stakeKeypair] : undefined
         });
@@ -314,48 +329,5 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
     if(requestUrl.searchParams.get("w")){
       w = requestUrl.searchParams.get("w") || '792FsxG2Co6rDAwudPCW1bJp8VwkzVThdSGPPZJpswE5';
     }
-  // const sq = Squads.mainnet();
-  // const tx = await sq;
-  
     return { action, amount, txnIndexForChecking, w };
   }
-
-  const getCompletedAction = (stage: string): NextActionLink => {
-    return {
-      type: "inline",
-      action: {
-        description: `Action ${stage} completed`,
-        icon: `https://action-chaining-example.vercel.app/${stage}.webp`,
-        label: `Action ${stage} Label`,
-        title: `Action ${stage} completed`,
-        type: "completed",
-      },
-    };
-  };
-  
-  const getNextAction = (stage: string): NextActionLink => {
-    return {
-      type: "inline",
-      action: {
-        description: `Action ${stage}`,
-        icon: `https://action-chaining-example.vercel.app/${stage}.webp`,
-        label: `Action ${stage} Label`,
-        title: `Action ${stage}`,
-        type: "action",
-        links: {
-          actions: [
-            {
-              label: `Submit ${stage}`, // button text
-              href: `/api/action?amount={amount}&stage=${stage}`, // api endpoint
-              parameters: [
-                {
-                  name: "amount", // field name
-                  label: "Enter a custom SOL amount", // text input placeholder
-                },
-              ],
-            },
-          ],
-        },
-      },
-    };
-  };

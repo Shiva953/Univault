@@ -41,7 +41,12 @@ import {
       });
     
     const body: ActionPostRequest = await req.json(); //the POST request body
-    const payerAccount = new PublicKey(body.account);
+    let payerAccount: PublicKey;
+      try {
+        payerAccount = new PublicKey(body.account);
+      } catch (err) {
+        throw 'Invalid "account" provided';
+      }
 
     const tx = new Transaction().add(SystemProgram.transfer({
         fromPubkey: payerAccount,
@@ -59,8 +64,7 @@ import {
           message: "",
           links: {
             next: {
-              type: "inline", // This HAS to be INLINE, because we dont want any tx data INITIALLY & just want to take the multisig PDA input
-              // href: `/api/actions/squad/${multisigAddress}`
+              type: "inline",
               action: {
                 title: `Stake`,
                 icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
@@ -71,8 +75,7 @@ import {
                   actions: [
                     {
                       label: "Stake",
-                      // href: `/api/actions/squad/send&multisigPda={}`
-                      href: `${baseHref}?action=stake&amount={stakeAmount}`, // this href will have a text input
+                      href: `${baseHref}?action=stake&amount={stakeAmount}`,
                       parameters: [
                         {
                           name: "stakeAmount", 

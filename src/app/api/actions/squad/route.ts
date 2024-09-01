@@ -24,7 +24,7 @@ import {
 
         const payload: ActionGetResponse = {
             title: `UniVault`,
-            icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
+            icon: new URL("/squads_blink_intro.png", requestUrl.origin).toString(),
             description: `View your vault, perform squads actions and vote on transactions!`,
             label: "Squads",
             links: {
@@ -138,6 +138,10 @@ export const POST = async (req: Request) => {
                     {
                       label: "Stake",
                       href: `/api/actions/squad/stake?multisigPda=${multisigPda.toString()}`,
+                  },
+                  {
+                    label: "Deposit",
+                    href: `/api/actions/squad/deposit?multisigPda=${multisigPda.toString()}`,
                   },
                   {
                     label: "Vote",

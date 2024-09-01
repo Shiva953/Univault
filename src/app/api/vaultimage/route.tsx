@@ -37,25 +37,25 @@ export async function GET(request: NextRequest) {
         multisigPda
     );
 
-    console.log(address)
-
     const [vault_account] = multisig.getVaultPda({
         multisigPda,
         index: 0,
       });
-
-      const vault = vault_account.toString()
     
 
   if (!address) {
     return new NextResponse('Missing address or threshold', { status: 400 });
   }
 
-  const members = multisigAccount.members.map((member) => {return member.key.toString()})
-  const threshold = multisigAccount.threshold;
-  const balance = (await connection.getBalance(vault_account))/LAMPORTS_PER_SOL;
-  const USDBalance = (await getPriceInUSDC(balance) || 0).toFixed(2);
-  console.log(members)
+  let members = [], threshold = 2, USDBalance = '0.00';
+  try{
+      members = multisigAccount.members.map((member) => {return member.key.toString()})
+      threshold = multisigAccount.threshold;
+      const balance = (await connection.getBalance(vault_account))/LAMPORTS_PER_SOL;
+      USDBalance = (await getPriceInUSDC(balance) || 0).toFixed(2);
+  } catch(err){
+      return new NextResponse('Unable to get vault data', { status: 400 });
+  }
 
   return new ImageResponse(
     (
@@ -115,10 +115,3 @@ export async function GET(request: NextRequest) {
     }
 )
 }
-
-// export function generateImageUrl(requestUrl: URL, multisigPda: string, threshold: string): string {
-//   return new URL(
-//     `/api/vaultimage?address=${multisigPda}`,
-//     requestUrl.origin
-//   ).toString();
-// }

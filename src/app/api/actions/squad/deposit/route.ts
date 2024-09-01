@@ -20,7 +20,7 @@ import {
     });
   };
 
-  export const POST = async(req: Request) => {
+export const POST = async(req: Request) => {
     const requestUrl = new URL(req.url);
     const { m } = validatedQueryParams(requestUrl); //decoding query params
     const multisigPda = new PublicKey(m);
@@ -66,27 +66,22 @@ import {
             next: {
               type: "inline",
               action: {
-                title: `Send from vault`,
+                title: `Deposit to Vault`,
                 icon: new URL("https://avatars.githubusercontent.com/u/84348534?v=4", requestUrl.origin).toString(),
-                description: `Transfer sol from your vault via a squads vault transaction!`,
+                description: `Deposit some sol to your vault!`,
                 label: "Squads",
                 type: "action",
                 links: {
                   actions: [
                     {
-                      label: "Send",
-                      href: `${baseHref}?action=send&amount={sendAmount}&wallet={w}`,
+                      label: "Deposit",
+                      href: `${baseHref}?action=deposit&amount={sendAmount}`,
                       parameters: [
                         {
                           name: "sendAmount", 
                           label: "Amount",
                           required: true,
                         },
-                        {
-                            name: "w", 
-                            label: "Wallet Address of Recipient",
-                            required: true,
-                          },
                       ],
                     },
                   ],
@@ -95,6 +90,10 @@ import {
             },
           },
         },
+        
+        // AFTER THIS ACTION HOWEVER, WE MUST SEND A POST TO RELATED ENDPOINTS FOR SEND, RECEIVE, STAKE
+        // no additional signers are required for this transaction
+        // signers: [],
       });
   
       return Response.json(payload, {
@@ -120,3 +119,4 @@ import {
       }
       return { m }
   }
+

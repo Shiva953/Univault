@@ -51,7 +51,6 @@ export const POST = async (req: Request) => {
           connection,
           multisigPda
         );
-
         
         const transactionIndexBN = multisigInfo.transactionIndex;
         let index = Number(transactionIndexBN);
@@ -152,12 +151,9 @@ export const POST = async (req: Request) => {
             await connection.getLatestBlockhash()
           ).blockhash;
           
-
           const payload: ActionPostResponse = await createPostResponse({
             fields: {
               transaction,
-              // HERE, ON SUCCESSFUL TXN REDIRECT TO THE 2ND BLINK WHERE YOU WERE TAKING THE TXN INDEX
-              // OR REFRESH???
               message: `${
                 action === "approve"
                   ? "Vote Approved" 
@@ -258,12 +254,6 @@ export const OPTIONS = async (req: Request) => {
             {
               label: `Return to multisig`,
               href: `/api/actions/squad?address=${multisigPda}`,
-              // parameters: [
-              //   {
-              //     name: "amount", // field name
-              //     label: "Enter a custom SOL amount", // text input placeholder
-              //   },
-              // ],
             },
           ],
         },
