@@ -13,18 +13,13 @@ import {
   import { SystemProgram, clusterApiUrl, Connection, PublicKey, Transaction, TransactionInstruction, ComputeBudgetProgram } from "@solana/web3.js";
   import * as multisig from "../../../../../node_modules/@sqds/multisig/lib/index";
 
-  //TODO - 
-  // MAKE CHAINING BETTER(POSSIBLY MAKE NEW BLINK ROUTES FOR SEND, STAKE, DEPOSIT AND FINALLY CONNECT EACH TO THE VOTE BLINK IN THE END)
-  // AVOID UNECESSARY TXNS
-  // HANDLE EDGE CASES AND ERROR SCENARIOS
-
   export const GET = async (req: Request) => {
     try {
         const requestUrl = new URL(req.url);
 
         const payload: ActionGetResponse = {
             title: `UniVault`,
-            icon: new URL("https://i.postimg.cc/J0WVk0p1/squads-blink-intro.png", requestUrl.origin).toString(),
+            icon: new URL("https://i.imghippo.com/files/wdpll1725196013.png", requestUrl.origin).toString(),
             description: `View your vault, perform squads actions and vote on transactions!`,
             label: "Squads",
             links: {
@@ -166,7 +161,7 @@ export const POST = async (req: Request) => {
       });
     } catch (err) {
       console.log(err);
-      let actionError: ActionError = { message: "Failed to fetch blink" };
+      let actionError: ActionError = { message: "Invalid Multisig PDA!" };
       if (typeof err == "string") actionError.message = err;
       return Response.json(actionError, {
         status: 400,

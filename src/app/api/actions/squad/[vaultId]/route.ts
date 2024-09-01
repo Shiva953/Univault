@@ -14,16 +14,6 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
   //@ts-ignore
   import * as multisig from "../../../../../../node_modules/@sqds/multisig/lib/index";
 
-  // N blinks(linked through action chaining)
-  // Blink 1 - Accept multisig PDA address
-  // Blink 2 - Show Vault Info + Stake/Send/Deposit Options, on click executing first txn
-  // Blink 3 - Show Voting option(considering 2/3 multisig you need 2 votes, 1 was already done if blink 2 txn was executed by a multisig member)
-  // for blink 3, finally you have approve and execute
-
-  // TODAY
-  // TEST A TYPICAL SQUADS TXN[CREATE + VOTE ON ITS EXECUTION + FINALLY EXECUTE]
-  // CREATE BLINK 1 + HALF OF BLINK 2
-
   let vault_account: PublicKey;
   let multisigPda: PublicKey;
 
@@ -41,7 +31,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
       const requestUrl = new URL(req.url);
       const { action, amount, txnIndexForChecking, w, inputToken, outputToken } = validatedQueryParams(requestUrl); //decoding query params
       
-      const body: ActionPostRequest = await req.json(); //the POST request body
+      const body: ActionPostRequest = await req.json();
       let payerAccount: PublicKey;
         try {
           payerAccount = new PublicKey(body.account);
@@ -109,97 +99,6 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
         });
           transaction.add(IX1);
       }
-
-      // if(action == "stake"){
-      //   // stake instruction = CREATE KEYPAIR + CREATE STAKE ACCOUNT + DELEGATE TO IT
-      //   const minStake = await connection.getStakeMinimumDelegation();
-      //   if (amount < minStake.value) {
-      //     console.log("minimum stake:", minStake);
-      //     return new Response(`Stake Amount should be more than ${minStake.value}`, {
-      //       status: 400,
-      //       headers: ACTIONS_CORS_HEADERS,
-      //   });
-      //   }
-
-
-      //   const minimumRent = await connection.getMinimumBalanceForRentExemption(
-      //     StakeProgram.space
-      //   );
-      //   console.log("MINIMUM RENT: ", minimumRent)
-      //   const amountUserWantsToStake = amount * LAMPORTS_PER_SOL; 
-      //   const amountToStake = minimumRent + amountUserWantsToStake //this is the ACTUAL AMOUNT TO STAKE
-
-      //   const fundingTxIx = SystemProgram.transfer({
-      //     fromPubkey: payerAccount,
-      //     toPubkey: stakeKeypair.publicKey,
-      //     lamports: minimumRent
-      //   })
-      //   transaction.add(fundingTxIx)
-
-      //   console.log("LAMPORTS TO BE STAKED BY USER: ", amountToStake)
-
-      // const createStakeAccountIxns = StakeProgram.createAccount({
-      //   authorized: new Authorized(vault_account, vault_account), // Here we set two authorities: Stake Authority and Withdrawal Authority. Both are set to our wallet.
-      //   fromPubkey: vault_account,
-      //   lamports: amountToStake, //AMOUNT OF SOL TO STAKE
-      //   // lockup: new Lockup(0, 0, SystemProgram.programId), // Optional. We'll set this to 0 for demonstration purposes.
-      //   stakePubkey: stakeKeypair.publicKey,
-      // }).instructions;
-
-      // // const s = sendAndConfirmTransaction(connection, createStakeAccountIxns, [payerAccount, stakeKeypair])
-      //   let stakeDelegateInstructions:TransactionInstruction[] = StakeProgram.delegate({
-      //     stakePubkey: stakeKeypair.publicKey,
-      //     authorizedPubkey: vault_account,
-      //     votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w") //SQUADS VALIDATOR
-      //   }).instructions;
-
-      //     // const txn = new Transaction().add(
-      //     //   StakeProgram.createAccount({
-      //     //     stakePubkey: stakeKeypair.publicKey,
-      //     //     authorized: new Authorized(vault_account, vault_account),
-      //     //     fromPubkey: vault_account,
-      //     //     lamports: amountToStake,
-      //     //     // note: if you want to time lock the stake account for any time period, this is how
-      //     //     // lockup: new Lockup(0, 0, account),
-      //     //   }),
-      //     //   StakeProgram.delegate({
-      //     //     stakePubkey: stakeKeypair.publicKey,
-      //     //     authorizedPubkey: vault_account,
-      //     //     votePubkey: new PublicKey("SQDSVTDfE5HqL7D6RjZk1vvZhaheWoskrDdDHCki68w"),
-      //     //   }),
-      //     // );
-
-      //     // const finalStakeIxns = txn.instructions;
-
-      //   const testStakeMessage = new TransactionMessage({
-      //     payerKey: vault_account,
-      //     recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-      //     instructions: [...createStakeAccountIxns, ...stakeDelegateInstructions],
-      //   });
-
-      //     const IX2 = multisig.instructions.vaultTransactionCreate({
-      //       multisigPda,
-      //       transactionIndex: BigInt(Number(txnIndex) + 1),
-      //       creator: payerAccount,
-      //       vaultIndex: 0,
-      //       ephemeralSigners: 1,
-      //       transactionMessage: testStakeMessage,
-      //     });
-      //     // const IX2 = await multisig.rpc.vaultTransactionCreate({
-      //     //   connection, 
-      //     //   feePayer: stakeKeypair,
-      //     //   multisigPda,
-      //     //   transactionIndex: BigInt(Number(txnIndex) + 1),
-      //     //   creator: payerAccount,
-      //     //   vaultIndex: 0,
-      //     //   ephemeralSigners: 1,
-      //     //   transactionMessage: testStakeMessage,
-      //     //   signers: [stakeKeypair]
-      //     // });
-      //     // const ins = await connection.getSignaturesForAddress
-
-      //   transaction.add(IX2);
-      // }
 
       if(action == "trade"){
         const tokenData: any = await connection.getParsedAccountInfo(new PublicKey(inputToken));
