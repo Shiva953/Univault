@@ -19,6 +19,12 @@ const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
     }
 
 export async function GET(request: NextRequest) {
+
+  const fontData = await fetch(
+    new URL('/GeistVF.ttf', import.meta.url),
+  ).then((res) => res.arrayBuffer());
+
+  
   const { searchParams } = new URL(request.url);
 
   const isAddressPresent = searchParams.has('address');
@@ -112,6 +118,13 @@ export async function GET(request: NextRequest) {
     {
       width: 900,
       height: 900,
+      fonts: [
+        {
+          name: 'Typewriter',
+          data: fontData,
+          style: 'normal',
+        },
+      ],
     }
 )
 }

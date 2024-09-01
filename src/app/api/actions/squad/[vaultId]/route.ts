@@ -183,7 +183,9 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
           recentBlockhash: blockhash,
           instructions: [
             ...computeBudgetInstructions.map(deserializeInstruction),
+            ...setupInstructions.map(deserializeInstruction),
             deserializeInstruction(swapInstructionPayload),
+            deserializeInstruction(cleanupInstruction),
           ],
         }).compileToV0Message(addressLookupTableAccounts);
         // const swaptxn = new VersionedTransaction(messageV0).serialize();
@@ -200,7 +202,7 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
             transactionIndex: BigInt(Number(txnIndex) + 1),
             creator: payerAccount,
             vaultIndex: 0,
-            ephemeralSigners: 1,
+            ephemeralSigners: 0,
             transactionMessage: finalSwapMessage,
           });
 
@@ -273,7 +275,6 @@ import { clusterApiUrl, Authorized, Connection, PublicKey, Transaction, Transact
               }
             }) : undefined)
           },
-          // signers: (action == "stake") ? [stakeKeypair] : undefined
         });
       
         return Response.json(payload, {
