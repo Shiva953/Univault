@@ -9,8 +9,6 @@ import * as anchor from "@coral-xyz/anchor";
 // Assume this function is imported from elsewhere in your project
 import * as multisig from "../../../../node_modules/@sqds/multisig/lib/index";
 
-export const runtime = 'edge';
-
 export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);

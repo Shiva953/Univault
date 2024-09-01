@@ -7,8 +7,6 @@ import { GeistSans } from 'geist/font/sans';
 import * as multisig from "../../../../node_modules/@sqds/multisig/lib/index";
 import { TOKEN_PROGRAM_ID } from '@coral-xyz/anchor/dist/cjs/utils/token';
 
-export const runtime = 'edge';
-
 const getPriceInUSDC = async (amount: number): Promise<number|undefined> => {
     try{
       const res = await fetch(`https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112&vsToken=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`)
