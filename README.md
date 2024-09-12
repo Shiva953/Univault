@@ -1,3 +1,8 @@
 ## Univault
 
-The ultimate multisig blink, view your vault, send tokens, stake through the squads validator, all through a squads vault transaction, and also vote for that!
+The ultimate multi-sig blink
+- **View Your Squads Vault**
+- **Make Vault Transactions**
+-** Vote on them**
+
+All in a **single** blink, thanks to the magic of solana blinks and action-chaining!
