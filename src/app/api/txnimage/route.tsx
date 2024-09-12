@@ -41,17 +41,6 @@ export async function GET(request: NextRequest) {
         transactionIndex: BigInt(Number(txnIndex)),
     });
 
-      const [proposal, bump] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("multisig"),
-          new PublicKey(address!).toBuffer(),
-          Buffer.from("transaction"),
-          new anchor.BN(parseInt(txnIndex!)).toArrayLike(Buffer, "le", 8),
-          Buffer.from("proposal"),
-        ],
-        multisig.PROGRAM_ID,
-      );
-
     //   const proposalInfo = await multisig.accounts.Proposal.fromAccountAddress(
     //     connection,
     //     proposal,
