@@ -1,6 +1,6 @@
 ## Univault
 
-The ultimate multi-sig blink
+The ULTIMATE multi-sig blink:
 - **View Your Squads Vault**
 - **Make Vault Transactions**
 - **Vote on them**
